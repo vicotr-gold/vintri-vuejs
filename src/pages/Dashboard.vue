@@ -5,7 +5,7 @@
       <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
     </div>
     <div class="table-list">
-      <div>
+      <div class="d-flex">
         <v-table>
           <thead>
             <tr>
@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <div class="pagination">
+    <div class="pagination" v-if="search && beersList.length > 0">
       <v-btn variant="outlined" color="success" size="small" v-bind:disabled="currentPage == 1" @click="handlePrevPage">
         Prev</v-btn>
       {{ currentPage }}
@@ -109,7 +109,9 @@ export default {
         axios
           .get("/beers", { params: { search: search, page: page } })
           .then((response) => {
-            beersList.value = response.data;
+            if (Array.isArray(response.data)) {
+              beersList.value = response.data;
+            }
             loader.hide()
           })
           .catch((error) => {
