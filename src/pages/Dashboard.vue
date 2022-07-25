@@ -43,12 +43,11 @@
         v-bind:disabled="beersList.length == 0 || beersList.length < 25" @click="handleNextPage">Next</v-btn>
     </div>
   </section>
-  <v-dialog v-model="dialog" max-width="500">
+  <v-dialog v-model="dialog" max-width="500" persistent>
     <v-card>
       <v-card-title class="text-h5">
         Add Rating
       </v-card-title>
-
       <v-card-text>
         <v-rating v-model="rating" hover active-color="orange lighten-3" color="orange"></v-rating>
         <v-textarea label="comments" rows="3" v-model="comments"></v-textarea>
@@ -57,11 +56,11 @@
       <v-card-actions>
         <v-spacer></v-spacer>
 
-        <v-btn color="green darken-1" text @click="dialog = false">
+        <v-btn color="green darken-1" text @click="dialog = false" v-bind:disabled="loading">
           Cancel
         </v-btn>
 
-        <v-btn color="green darken-1" text @click="handleAddComments">
+        <v-btn color="green darken-1" :loading="loading" v-bind:disabled="loading" text @click="handleAddComments">
           Add
         </v-btn>
       </v-card-actions>
@@ -83,7 +82,8 @@ export default {
       dialog: false,
       rating: 0,
       selectedBeer: null,
-      comments: ''
+      comments: '',
+      loading: false
     };
   },
   setup() {
@@ -142,8 +142,8 @@ export default {
       this.currentPage--
     },
     handleAddComments() {
-      console.log(this.rating)
       if (this.rating > 0 && this.selectedBeer) {
+        this.loading = true
         axios.post("/beers/rating/" + this.selectedBeer, {
           rating: this.rating,
           comments: this.comments
@@ -151,11 +151,14 @@ export default {
           this.dialog = false;
           this.rating = 0;
           this.selectedBeer = null;
+          this.comments = '';
           console.log(response)
+          this.loading = false
           this.toast("Thanks. Your rating added successfully.", {
             timeout: 2000,
           });
         }).catch(error => {
+          this.loading = false
           this.toast.error(error?.response?.data?.message || "API Server Error", {
             timeout: 2000,
           });
