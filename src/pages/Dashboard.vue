@@ -1,10 +1,10 @@
 <template>
   <section class="section-dashboard">
+    <h2>Beers List</h2>
+    <div class="search-bar">
+      <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
+    </div>
     <div class="table-list">
-      <h2>Beers List</h2>
-      <div class="search-bar">
-        <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
-      </div>
       <div>
         <v-table>
           <thead>
@@ -73,6 +73,9 @@ import { watch, ref } from "vue";
 import axios from "../api/axios";
 import { useToast } from "vue-toastification";
 import useDebouncedRef from "../utils/useDebouncedRef";
+import { useLoading } from 'vue3-loading-overlay';
+// Import stylesheet
+import 'vue3-loading-overlay/dist/vue3-loading-overlay.css';
 export default {
   name: "DashboardPage",
   data() {
@@ -98,10 +101,19 @@ export default {
     });
     function getSearchResults(search, page) {
       if (search) {
+        let loader = useLoading();
+        loader.show({
+          color: '#00ab00',
+          loader: "bars"
+        });
         axios
           .get("/beers", { params: { search: search, page: page } })
-          .then((response) => (beersList.value = response.data))
+          .then((response) => {
+            beersList.value = response.data;
+            loader.hide()
+          })
           .catch((error) => {
+            loader.hide()
             toast.error(error?.response?.data?.message || "API Server Error", {
               timeout: 2000,
             });

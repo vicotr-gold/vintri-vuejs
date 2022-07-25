@@ -9,6 +9,7 @@ import "material-design-icons-iconfont/dist/material-design-icons.css";
 import "@mdi/font/css/materialdesignicons.css";
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
+
 loadFonts();
 const options = {
   // You can set your default options here
