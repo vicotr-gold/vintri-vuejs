@@ -2,7 +2,8 @@
   <section class="section-dashboard">
     <h2>Beers List</h2>
     <div class="search-bar">
-      <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
+      <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" @keyup="handleSearch()" single-line
+        hide-details></v-text-field>
     </div>
     <div class="table-list">
       <div class="d-flex">
@@ -34,7 +35,6 @@
         </div>
       </div>
     </div>
-
     <div class="pagination" v-if="search && beersList.length > 0">
       <v-btn variant="outlined" color="success" size="small" v-bind:disabled="currentPage == 1" @click="handlePrevPage">
         Prev</v-btn>
@@ -68,10 +68,8 @@
   </v-dialog>
 </template>
 <script>
-import { watch, ref } from "vue";
 import axios from "../api/axios";
 import { useToast } from "vue-toastification";
-import useDebouncedRef from "../utils/useDebouncedRef";
 import { useLoading } from 'vue3-loading-overlay';
 // Import stylesheet
 import 'vue3-loading-overlay/dist/vue3-loading-overlay.css';
@@ -83,23 +81,33 @@ export default {
       rating: 0,
       selectedBeer: null,
       comments: '',
-      loading: false
+      loading: false,
+      beersList: [],
+      search: '',
+      currentPage: 1,
+      timer: null
     };
   },
   setup() {
-    const beersList = ref([]);
-    const search = useDebouncedRef("", 400);
-    const currentPage = ref(1);
-    watch(search, (newSearch) => {
-      // init an API request
-      currentPage.value = 1
-      getSearchResults(newSearch, 1);
-    });
-    watch(currentPage, (newPage) => {
-      // init an API request
-      getSearchResults(search.value, newPage);
-    });
-    function getSearchResults(search, page) {
+    const toast = useToast();
+    return { toast };
+  },
+  mounted() { },
+  methods: {
+    handleOpenModal(item) {
+      this.dialog = true
+      this.selectedBeer = item.id
+    },
+    handleNextPage() {
+      this.currentPage++
+      this.getSearchResults(this.search, this.currentPage)
+    },
+    handlePrevPage() {
+      this.currentPage--
+      this.getSearchResults(this.search, this.currentPage)
+    },
+    getSearchResults(search, page) {
+      const app = this
       if (search) {
         let loader = useLoading();
         loader.show({
@@ -110,36 +118,29 @@ export default {
           .get("/beers", { params: { search: search, page: page } })
           .then((response) => {
             if (Array.isArray(response.data)) {
-              beersList.value = response.data;
+              app.beersList = response.data;
             }
             loader.hide()
           })
           .catch((error) => {
             loader.hide()
-            toast.error(error?.response?.data?.message || "API Server Error", {
+            app.toast.error(error?.response?.data?.message || "API Server Error", {
               timeout: 2000,
             });
           });
       } else {
-        beersList.value = []
+        app.beersList.value = []
       }
-
-    }
-    const toast = useToast();
-    // Make it available inside methods
-    return { toast, search, beersList, getSearchResults, currentPage };
-  },
-  mounted() { },
-  methods: {
-    handleOpenModal(item) {
-      this.dialog = true
-      this.selectedBeer = item.id
     },
-    handleNextPage() {
-      this.currentPage++
-    },
-    handlePrevPage() {
-      this.currentPage--
+    handleSearch() {
+      if (this.timer) {
+        clearTimeout(this.timer);
+        this.timer = null;
+      }
+      this.timer = setTimeout(() => {
+        this.currentPage = 1
+        this.getSearchResults(this.search, this.currentPage)
+      }, 300);
     },
     handleAddComments() {
       if (this.rating > 0 && this.selectedBeer) {
